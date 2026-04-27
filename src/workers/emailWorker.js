@@ -5,7 +5,6 @@ import { getRedisConnection } from "../config/redis.js";
 import { Prospect } from "../models/Prospect.js";
 import { generateColdEmailSequence } from "../services/openaiEmailService.js";
 import { logger } from "../utils/logger.js";
-import { scoreProspect } from "../services/leadScoringService.js";
 import { addLeadToCampaign } from "../services/instantlyService.js";
 
 async function start() {
@@ -78,44 +77,30 @@ async function start() {
     // ✅ Update status
     prospect.status = "generated";
 
-    // ✅ Score lead
-    prospect.score = scoreProspect({
-      company: prospect.company,
-      role: prospect.role,
-      painPoints: prospect.painPoints,
-      notes: prospect.notes,
-      replyType: prospect.reply_type,
-    });
-
     await prospect.save();
 
     console.log("💾 Prospect updated:", prospectId);
 
-    // 🚀 AUTO-PUSH to Instantly campaign (fire-and-forget, don't fail the job)
-    try {
-      console.log("📤 Pushing lead to Instantly...");
-      const leadResult = await addLeadToCampaign({
-        email: prospect.email,
-        first_name: (prospect.name || "").split(" ").filter(Boolean)[0] || "",
-        company: prospect.company,
-        payload: {
-          step1_subject: step1_subject,
-          step1_body: step1_body,
-          step2_subject: step2_subject,
-          step2_body: step2_body,
-          step3_subject: step3_subject,
-          step3_body: step3_body,
-        },
-      });
+    // 🚀 AUTO-PUSH to Instantly campaign (mandatory — fails the job if down)
+    console.log("📤 Pushing lead to Instantly...");
+    const leadResult = await addLeadToCampaign({
+      email: prospect.email,
+      first_name: (prospect.name || "").split(" ").filter(Boolean)[0] || "",
+      company: prospect.company,
+      payload: {
+        step1_subject: step1_subject,
+        step1_body: step1_body,
+        step2_subject: step2_subject,
+        step2_body: step2_body,
+        step3_subject: step3_subject,
+        step3_body: step3_body,
+      },
+    });
 
-      if (leadResult?.id) {
-        prospect.instantlyLeadId = leadResult.id;
-        await prospect.save();
-        console.log("✅ Lead pushed to Instantly:", leadResult.id);
-      }
-    } catch (instantlyErr) {
-      console.error("⚠️ Instantly push failed (lead saved locally):", instantlyErr.message);
-      // Don't fail the job — prospect is already generated & saved
+    if (leadResult?.id) {
+      prospect.instantlyLeadId = leadResult.id;
+      await prospect.save();
+      console.log("✅ Lead pushed to Instantly:", leadResult.id);
     }
 
     return { prospectId, status: "generated" };

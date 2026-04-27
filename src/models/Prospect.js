@@ -55,17 +55,9 @@ const ProspectSchema = new mongoose.Schema(
     repliedAt: Date,
 
     reply_text: { type: String, trim: true },
-    reply_type: {
-      type: String,
-      enum: ["positive", "negative", "neutral", "unknown"],
-      default: "unknown"
-    },
 
     // 🚀 FORWARDING / SALES ACTION
     forwardedToSales: { type: Boolean, default: false },
-
-    // 🚀 SCORING
-    score: { type: Number, default: 0, index: true },
 
     // A/B testing
     variant: { type: String, trim: true, default: "A", index: true },

@@ -4,8 +4,6 @@ import { Prospect } from "../models/Prospect.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { HttpError } from "../utils/errors.js";
 import { enqueueProspectGeneration } from "../queue/emailQueue.js";
-import { prospectsToInstantlyCsv } from "../utils/csvExport.js";
-import { addLeadToCampaign, bulkAddLeads } from "../services/instantlyService.js";
 
 const CreateProspectSchema = z.object({
   name: z.string().trim().optional(),
@@ -15,57 +13,6 @@ const CreateProspectSchema = z.object({
   painPoints: z.array(z.string().trim()).optional().default([]),
   notes: z.string().trim().optional(),
   variant: z.enum(["A", "B"]).optional().default("A")
-});
-
-const GenerateSchema = z.object({
-  prospectIds: z.array(z.string().trim().min(1)).optional(),
-  status: z.enum(["pending", "generated", "sent", "replied"]).optional()
-});
-
-export const createProspect = asyncHandler(async (req, res) => {
-  const input = CreateProspectSchema.parse(req.body || {});
-
-  let prospect;
-  console.log("Creating prospect with input:", input);
-  try {
-    prospect = await Prospect.create({
-      ...input,
-      status: "pending"
-    });
-  } catch (e) {
-    if (e?.code === 11000) throw new HttpError(409, "Prospect email already exists");
-    throw e;
-  }
-
-  // Queue generation in background (non-blocking — prospect already saved)
-  try {
-    console.log("👉 Adding job to queue...");
-    await enqueueProspectGeneration(prospect._id.toString());
-    console.log("✅ Job successfully added!");
-  } catch (err) {
-    console.error("❌ Queue error (prospect saved, will retry via worker):", err.message);
-    // Don't fail the request — the prospect is already in the DB
-  }
-
-  res.status(201).json({ data: prospect });
-});
-
-export const listProspects = asyncHandler(async (req, res) => {
-  const prospects = await Prospect.find().sort({ createdAt: -1 }).lean();
-  res.json({ data: prospects });
-});
-
-export const generateProspects = asyncHandler(async (req, res) => {
-  const input = GenerateSchema.parse(req.body || {});
-  const filter = {};
-
-  if (input.status) filter.status = input.status;
-  if (input.prospectIds?.length) filter._id = { $in: input.prospectIds };
-
-  const prospects = await Prospect.find(filter, { _id: 1 }).lean();
-  const jobs = await Promise.all(prospects.map((p) => enqueueProspectGeneration(p._id.toString())));
-
-  res.json({ queued: jobs.length });
 });
 
 export const uploadProspects = asyncHandler(async (req, res) => {
@@ -146,77 +93,4 @@ export const uploadProspects = asyncHandler(async (req, res) => {
   res.status(201).json({ data: results });
 });
 
-export const pushToInstantly = asyncHandler(async (req, res) => {
-  const { prospectIds } = req.body || {};
-
-  let prospects;
-  if (prospectIds?.length) {
-    prospects = await Prospect.find({
-      _id: { $in: prospectIds },
-      status: "generated",
-      sequence: { $exists: true },
-    }).lean();
-  } else {
-    // Push all generated prospects not yet in Instantly
-    prospects = await Prospect.find({
-      status: "generated",
-      instantlyLeadId: { $exists: false },
-      "sequence.step1.subject": { $exists: true },
-    }).lean();
-  }
-
-  if (!prospects.length) {
-    return res.json({ pushed: 0, message: "No eligible prospects found" });
-  }
-
-  const results = [];
-  for (const p of prospects) {
-    try {
-      const leadResult = await addLeadToCampaign({
-        email: p.email,
-        first_name: (p.name || "").split(" ").filter(Boolean)[0] || "",
-        company: p.company,
-        payload: {
-          step1_subject: p.sequence?.step1?.subject || "",
-          step1_body: p.sequence?.step1?.body || "",
-          step2_subject: p.sequence?.step2?.subject || "",
-          step2_body: p.sequence?.step2?.body || "",
-          step3_subject: p.sequence?.step3?.subject || "",
-          step3_body: p.sequence?.step3?.body || "",
-        },
-      });
-
-      if (leadResult?.id) {
-        await Prospect.updateOne({ _id: p._id }, { $set: { instantlyLeadId: leadResult.id } });
-        results.push({ email: p.email, status: "pushed", instantlyLeadId: leadResult.id });
-      }
-    } catch (err) {
-      results.push({ email: p.email, status: "failed", error: err.message });
-    }
-  }
-
-  res.json({ pushed: results.length, results });
-});
-
-export const exportProspectsCsv = asyncHandler(async (req, res) => {
-  const prospects = await Prospect.find(
-  {
-    status: { $in: ["generated", "sent", "replied"] },
-    "sequence.step1.subject": { $exists: true }
-  },
-  {
-    email: 1,
-    name: 1,
-    company: 1,
-    sequence: 1
-  }
-)
-  .sort({ updatedAt: -1 })
-  .lean();
-
-  const csv = prospectsToInstantlyCsv(prospects);
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", "attachment; filename=\"instantly_prospects.csv\"");
-  res.status(200).send(csv);
-});
 
