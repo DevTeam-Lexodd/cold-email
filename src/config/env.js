@@ -9,7 +9,21 @@ const EnvSchema = z.object({
   MONGO_URI: z.string().min(1, "MONGO_URI is required"),
   REDIS_HOST: z.string().min(1, "REDIS_HOST is required"),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
-  OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required")
+  OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required"),
+  OWNER_EMAIL: z
+    .preprocess((v) => (v === "" ? undefined : v), z.string().email().optional()),
+  GRAPH_TENANT_ID: z
+    .preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  GRAPH_CLIENT_ID: z
+    .preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  GRAPH_CLIENT_SECRET: z
+    .preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  GRAPH_USER_ID: z
+    .preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  INSTANTLY_API_KEY: z
+    .preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  INSTANTLY_CAMPAIGN_ID: z
+    .preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
 });
 
 export const env = EnvSchema.parse(process.env);

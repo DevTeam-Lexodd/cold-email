@@ -1,3 +1,5 @@
+import { ZodError } from "zod";
+
 export class HttpError extends Error {
   constructor(statusCode, message, details) {
     super(message);
@@ -12,6 +14,17 @@ export function notFound(req, res) {
 }
 
 export function errorHandler(err, req, res, next) {
+  // Handle Zod validation errors
+  if (err instanceof ZodError) {
+    const details = err.errors.map((e) => ({
+      path: e.path.join("."),
+      message: e.message
+    }));
+    return res.status(400).json({
+      error: { message: "Validation error", details }
+    });
+  }
+
   const status = err?.statusCode && Number.isInteger(err.statusCode) ? err.statusCode : 500;
   const message = status === 500 ? "Internal Server Error" : err?.message || "Error";
   const payload = {

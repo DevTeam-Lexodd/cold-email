@@ -1,9 +1,10 @@
 import { Queue } from "bullmq";
+import { getRedisConnection } from "../config/redis.js";
 
 export const EMAIL_QUEUE_NAME = "emailQueue";
 
 export const emailQueue = new Queue(EMAIL_QUEUE_NAME, {
-  connection: { host: "127.0.0.1", port: 6379 },
+  connection: getRedisConnection(),
   defaultJobOptions: {
     attempts: 3, // 🔁 retry
     backoff: { type: "exponential", delay: 2000 }, // ⏳ delay

@@ -1,0 +1,6 @@
+email,name,company,role,pain points,notes,variant
+john@acme.com,John Smith,Acme Corp,CTO,"slow deployment,high costs",Enterprise,A
+jane@tech.io,Jane Doe,Tech.io,VP Engineering,"engineering velocity,growing team",SaaS,A
+bob@startup.com,Bob Lee,StartupX,Founder,"fundraising,marketing",Early stage,B
+alice@scaleup.com,Alice Wang,ScaleUp Inc,Head of Product,"user retention,onboarding",Mid-market,A
+charlie@devshop.io,Charlie Brown,DevShop,Lead Engineer,"technical debt,scalability",Agency,B
