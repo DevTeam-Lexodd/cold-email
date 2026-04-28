@@ -12,7 +12,6 @@ const CreateProspectSchema = z.object({
   role: z.string().trim().optional(),
   painPoints: z.array(z.string().trim()).optional().default([]),
   notes: z.string().trim().optional(),
-  variant: z.enum(["A", "B"]).optional().default("A")
 });
 
 export const uploadProspects = asyncHandler(async (req, res) => {
@@ -52,7 +51,7 @@ export const uploadProspects = asyncHandler(async (req, res) => {
     const role = normalized.role || normalized["job title"] || normalized["title"] || "";
     const painPointsStr = normalized.painpoints || normalized["pain points"] || "";
     const notes = normalized.notes || "";
-    const variant = (normalized.variant || "A").toUpperCase();
+    const campaignId = normalized.campaign_id || normalized["campaign id"] || "";
 
     if (!email) {
       results.errors.push({ row, reason: "Missing email address" });
@@ -69,11 +68,11 @@ export const uploadProspects = asyncHandler(async (req, res) => {
           ? painPointsStr.split(/[,;]/).map((s) => s.trim()).filter(Boolean)
           : [],
         notes: notes || undefined,
-        variant: variant === "B" ? "B" : "A",
       });
 
       try {
-        const prospect = await Prospect.create({ ...input, status: "pending" });
+        // stepCount is derived from the campaign automatically — no need to pass it
+        const prospect = await Prospect.create({ ...input, status: "pending", campaignId: campaignId || undefined });
         // Queue generation for each prospect
         await enqueueProspectGeneration(prospect._id.toString());
         results.created++;
@@ -92,5 +91,3 @@ export const uploadProspects = asyncHandler(async (req, res) => {
 
   res.status(201).json({ data: results });
 });
-
-

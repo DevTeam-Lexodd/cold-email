@@ -33,6 +33,7 @@ out/
 
 # System files
 .DS_Store
+._*
 Thumbs.db
 
 # IDE/editor files
@@ -46,6 +47,3 @@ Thumbs.db
 # Temporary files
 *.swp
 *.tmp
-
-._*
-.DS_Store

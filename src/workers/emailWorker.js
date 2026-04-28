@@ -3,9 +3,10 @@ import { connectDb } from "../config/db.js";
 import { EMAIL_QUEUE_NAME } from "../queue/emailQueue.js";
 import { getRedisConnection } from "../config/redis.js";
 import { Prospect } from "../models/Prospect.js";
+import { Campaign } from "../models/Campaign.js";
 import { generateColdEmailSequence } from "../services/openaiEmailService.js";
 import { logger } from "../utils/logger.js";
-import { addLeadToCampaign } from "../services/instantlyService.js";
+import { addLeadToCampaign, getCampaignStepCount } from "../services/instantlyService.js";
 
 async function start() {
   console.log("🚀 Worker booting...");
@@ -30,49 +31,58 @@ async function start() {
     }
 
     // ✅ Skip if already generated
-    if (prospect.status === "generated" && prospect.sequence?.step1?.subject) {
+    const existingSteps = [...(prospect.sequence?.keys() || [])];
+    if (prospect.status === "generated" && existingSteps.length > 0) {
       console.log("⏩ Already generated, skipping:", prospectId);
       return { alreadyGenerated: true };
     }
 
-    console.log("🤖 Calling OpenAI...");
- 
-    const {
-      step1_subject,
-      step1_body,
-      step2_subject,
-      step2_body,
-      step3_subject,
-      step3_body
-    } = await generateColdEmailSequence({
+    // 🎯 Derive stepCount from the campaign (NOT from prospect/CSV — avoids mismatch)
+    const campaignId = prospect.campaignId || null;
+    const stepCount = campaignId
+      ? await getCampaignStepCount(campaignId)
+      : 3; // fallback if no campaign assigned
+
+    // 🎯 Fetch campaign prompt (user-provided AI instructions)
+    let campaignPrompt = "";
+    if (campaignId) {
+      const campaignDoc = await Campaign.findOne({ instantlyCampaignId: campaignId }).lean();
+      if (campaignDoc?.prompt) {
+        campaignPrompt = campaignDoc.prompt;
+      }
+    }
+
+    console.log(`🤖 Campaign has ${stepCount} steps — calling OpenAI...`);
+
+    const sequenceData = await generateColdEmailSequence({
       name: prospect.name,
       company: prospect.company,
       role: prospect.role,
       painPoints: prospect.painPoints,
       notes: prospect.notes,
-      variant: prospect.variant,
+      prompt: campaignPrompt,
+      stepCount,
     });
 
     console.log("✅ OpenAI response received");
 
-    // ✅ SAVE FULL SEQUENCE
-    prospect.sequence = {
-      step1: {
-        subject: step1_subject,
-        body: step1_body,
+    // ✅ SAVE FULL SEQUENCE as Map entries (dynamic step count)
+    const customVariables = {};
+    for (let i = 1; i <= stepCount; i++) {
+      const subjectKey = `step${i}_subject`;
+      const bodyKey = `step${i}_body`;
+      const subject = sequenceData[subjectKey] || "";
+      const body = sequenceData[bodyKey] || "";
+
+      prospect.sequence.set(`step${i}`, {
+        subject,
+        body,
         sent: false,
-      },
-      step2: {
-        subject: step2_subject,
-        body: step2_body,
-        sent: false,
-      },
-      step3: {
-        subject: step3_subject,
-        body: step3_body,
-        sent: false,
-      },
-    };
+      });
+
+      customVariables[subjectKey] = subject;
+      customVariables[bodyKey] = body;
+    }
 
     // ✅ Update status
     prospect.status = "generated";
@@ -82,19 +92,13 @@ async function start() {
     console.log("💾 Prospect updated:", prospectId);
 
     // 🚀 AUTO-PUSH to Instantly campaign (mandatory — fails the job if down)
-    console.log("📤 Pushing lead to Instantly...");
+    console.log(`📤 Pushing lead to Instantly campaign: ${campaignId || "default"}`);
     const leadResult = await addLeadToCampaign({
       email: prospect.email,
       first_name: (prospect.name || "").split(" ").filter(Boolean)[0] || "",
       company: prospect.company,
-      payload: {
-        step1_subject: step1_subject,
-        step1_body: step1_body,
-        step2_subject: step2_subject,
-        step2_body: step2_body,
-        step3_subject: step3_subject,
-        step3_body: step3_body,
-      },
+      campaignId,
+      customVariables,
     });
 
     if (leadResult?.id) {
@@ -103,7 +107,7 @@ async function start() {
       console.log("✅ Lead pushed to Instantly:", leadResult.id);
     }
 
-    return { prospectId, status: "generated" };
+    return { prospectId, status: "generated", stepCount };
 
   } catch (err) {
     console.error("❌ Job processing failed:", err);
@@ -151,4 +155,3 @@ start().catch((e) => {
   console.error("🔥 Worker fatal error:", e);
   process.exit(1);
 });
-

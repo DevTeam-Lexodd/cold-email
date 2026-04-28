@@ -26,29 +26,27 @@ const ProspectSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🚀 AI GENERATED SEQUENCE
+    // 🚀 CAMPAIGN ROUTING — which Instantly campaign this lead belongs to
+    campaignId: { type: String, trim: true, index: true },
+
+    // 🚀 AI GENERATED SEQUENCE — stored as a Map so any number of steps work
     sequence: {
-      step1: {
-        subject: String,
-        body: String,
-        sent: { type: Boolean, default: false }
-      },
-      step2: {
-        subject: String,
-        body: String,
-        sent: { type: Boolean, default: false }
-      },
-      step3: {
-        subject: String,
-        body: String,
-        sent: { type: Boolean, default: false }
-      }
+      type: Map,
+      of: new mongoose.Schema(
+        {
+          subject: String,
+          body: String,
+          sent: { type: Boolean, default: false }
+        },
+        { _id: false }
+      ),
+      default: {}
     },
 
     // 🚀 TRACK CURRENT STEP (important)
     currentStep: {
       type: Number,
-      default: 0 // 0 = not sent yet, 1,2,3 = sequence progress
+      default: 0 // 0 = not sent yet, 1,2,3,... = sequence progress
     },
 
     // 🚀 REPLY HANDLING
@@ -59,9 +57,6 @@ const ProspectSchema = new mongoose.Schema(
     // 🚀 FORWARDING / SALES ACTION
     forwardedToSales: { type: Boolean, default: false },
 
-    // A/B testing
-    variant: { type: String, trim: true, default: "A", index: true },
-
     // 🔗 Instantly campaign lead reference
     instantlyLeadId: { type: String, trim: true, index: true, sparse: true }
   },
@@ -69,4 +64,3 @@ const ProspectSchema = new mongoose.Schema(
 );
 
 export const Prospect = mongoose.model("Prospect", ProspectSchema);
-

@@ -24,6 +24,8 @@ const EnvSchema = z.object({
     .preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   INSTANTLY_CAMPAIGN_ID: z
     .preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  INSTANTLY_DEFAULT_CAMPAIGN_ID: z
+    .preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
 });
 
 export const env = EnvSchema.parse(process.env);

@@ -4,6 +4,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { prospectRoutes } from "./routes/prospectRoutes.js";
 import { webhookRoutes } from "./routes/webhookRoutes.js";
+import { campaignRoutes } from "./routes/campaignRoutes.js";
 import { errorHandler, notFound } from "./utils/errors.js";
 
 export function buildApp() {
@@ -26,6 +27,7 @@ export function buildApp() {
 
   app.use("/api/prospects", prospectRoutes);
   app.use("/api/webhooks", webhookRoutes);
+  app.use("/api/campaigns", campaignRoutes);
 
   app.use(notFound);
   app.use(errorHandler);
