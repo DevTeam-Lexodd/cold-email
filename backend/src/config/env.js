@@ -1,7 +1,14 @@
 import { z } from "zod";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Always load .env from project root: cold-email/.env
+const rootDir = path.resolve(__dirname, "..", "..", "..");
+dotenv.config({ path: path.join(rootDir, ".env") });
 
 const EnvSchema = z.object({
   NODE_ENV: z.string().optional().default("development"),
