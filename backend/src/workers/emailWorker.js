@@ -140,13 +140,8 @@ async function start() {
     console.error("❌ Job failed:", job?.id, err);
   });
 
-  let lastWorkerErrorTime = 0;
   worker.on("error", (err) => {
-    const now = Date.now();
-    if (now - lastWorkerErrorTime > 30000) {
-      console.error("❌ Worker error:", err.message);
-      lastWorkerErrorTime = now;
-    }
+    console.error("❌ Worker error:", err);
   });
 
   const shutdown = async (signal) => {
