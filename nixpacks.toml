@@ -4,3 +4,6 @@ cmds = [
     "cd backend && npm install",
     "cd frontend && npm install"
 ]
+
+[phases.build]
+cmds = ["npm run build"]

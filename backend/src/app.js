@@ -38,7 +38,7 @@ export function buildApp() {
   app.use("/api/campaigns", verifyAuth, campaignRoutes);
 
   // Serve built frontend in production
-  const frontendDist = path.join(__dirname, "..", "frontend", "dist");
+  const frontendDist = path.join(__dirname, "..", "..", "frontend", "dist");
 
   app.use(express.static(frontendDist));
 
