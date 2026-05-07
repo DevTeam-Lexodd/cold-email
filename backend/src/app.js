@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
@@ -39,11 +38,7 @@ export function buildApp() {
   app.use("/api/campaigns", verifyAuth, campaignRoutes);
 
   // Serve built frontend in production
-  // In Docker: __dirname = /app/backend/src → ../../frontend/dist = /app/frontend/dist
-  // Locally:   __dirname = .../backend/src    → ../frontend/dist    = .../frontend/dist
-  const distLocal = path.join(__dirname, "..", "frontend", "dist");
-  const distDocker = path.join(__dirname, "..", "..", "frontend", "dist");
-  const frontendDist = fs.existsSync(distDocker) ? distDocker : distLocal;
+  const frontendDist = path.join(__dirname, "..", "frontend", "dist");
 
   app.use(express.static(frontendDist));
 
