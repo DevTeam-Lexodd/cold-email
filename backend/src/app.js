@@ -18,6 +18,7 @@ export function buildApp() {
   const app = express();
 
   app.use(helmet({
+    contentSecurityPolicy: false,
     strictTransportSecurity: false,
     crossOriginOpenerPolicy: false,
     crossOriginEmbedderPolicy: false,
