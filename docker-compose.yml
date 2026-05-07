@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: cold-email-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: cold_email
+    ports:
+      - "127.0.0.1:27017:27017"
+
+  redis:
+    image: redis:7-alpine
+    container_name: cold-email-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: cold-email-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    depends_on:
+      - mongo
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.worker
+    container_name: cold-email-worker
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    depends_on:
+      - mongo
+      - redis
+
+volumes:
+  mongo-data:
+  redis-data:

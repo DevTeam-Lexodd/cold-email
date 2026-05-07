@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(0 0% 4%);                    /* #0B0B0B */
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(0 0% 4%);
+  --color-primary: hsl(243 100% 69%);                   /* #6C63FF */
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(239 84% 59%);                  /* #4F46E5 */
+  --color-secondary-foreground: hsl(0 0% 100%);
+  --color-muted: hsl(215 14% 95%);
+  --color-muted-foreground: hsl(215 14% 46%);           /* #9CA3AF */
+  --color-accent: hsl(243 100% 97%);
+  --color-accent-foreground: hsl(243 70% 40%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-border: hsl(215 14% 86%);
+  --color-input: hsl(215 14% 86%);
+  --color-ring: hsl(243 100% 69%);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --color-background: hsl(0 0% 6%);
+  --color-foreground: hsl(0 0% 95%);
+  --color-card: hsl(0 0% 6%);
+  --color-card-foreground: hsl(0 0% 95%);
+  --color-primary: hsl(243 100% 72%);
+  --color-primary-foreground: hsl(0 0% 4%);
+  --color-secondary: hsl(239 84% 64%);
+  --color-secondary-foreground: hsl(0 0% 95%);
+  --color-muted: hsl(0 0% 15%);
+  --color-muted-foreground: hsl(215 14% 65%);
+  --color-accent: hsl(243 30% 20%);
+  --color-accent-foreground: hsl(0 0% 95%);
+  --color-destructive: hsl(0 62.8% 30.6%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-border: hsl(0 0% 15%);
+  --color-input: hsl(0 0% 15%);
+  --color-ring: hsl(243 100% 72%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  /* ---- Custom Scrollbar ---- */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(215 14% 46% / 0.3) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(215 14% 46% / 0.35);
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(215 14% 46% / 0.55);
+  }
+}

@@ -1,0 +1,13 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install backend deps
+COPY backend/package.json backend/package-lock.json backend/
+RUN cd backend && npm ci --omit=dev
+
+COPY backend/ backend/
+
+ENV NODE_ENV=production
+
+CMD ["node", "backend/src/workers/emailWorker.js"]
