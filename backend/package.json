@@ -10,7 +10,7 @@
     "dev:api": "cross-env NODE_ENV=development nodemon src/server.js",
     "dev:ui": "cd ../frontend && npm run dev",
     "build": "cd ../frontend && npm run build",
-    "start": "node src/server.js",
+    "start": "node src/server.js & node src/workers/emailWorker.js & wait",
     "worker": "nodemon src/workers/emailWorker.js",
     "lint": "eslint ."
   },
