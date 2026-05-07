@@ -17,7 +17,12 @@ const __dirname = path.dirname(__filename);
 export function buildApp() {
   const app = express();
 
-  app.use(helmet({ strictTransportSecurity: false }));
+  app.use(helmet({
+    strictTransportSecurity: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    originAgentCluster: false,
+  }));
   app.use(cors());
   app.use(express.json({ limit: "1mb" }));
 
